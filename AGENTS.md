@@ -12,11 +12,11 @@ Un solo comando deja el repo listo y verifica que todo esté en verde:
 
 ```bash
 uv sync
-uv run pytest
+uv run python -m unittest discover -s src -p "test*.py"
 ```
 
 - Stack: python (uv)
-- Tests: pytest
+- Tests: unittest en `src/`
 
 ## Instalación
 
