@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+import time
 from pathlib import Path
 
 import requests
@@ -8,13 +9,32 @@ import requests
 from src.core.parsers import parse_source1_all
 from src.core.constants import SOURCE1_DEFAULT_URL
 
+MAX_RETRIES = 3
+RETRY_BACKOFF = 5  # segundos entre reintentos
+
 
 def download_source1(url: str = SOURCE1_DEFAULT_URL) -> dict[str, dict[str, dict]]:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
-    resp = requests.get(url, headers=headers, timeout=60)
-    resp.raise_for_status()
+
+    last_exc: Exception | None = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = requests.get(url, headers=headers, timeout=60)
+            resp.raise_for_status()
+            break
+        except requests.exceptions.RequestException as ex:
+            last_exc = ex
+            msg = str(ex).lower()
+            pool_problem = "pool timed out" in msg or "pool exhausted" in msg or "max retries exceeded" in msg or "connection" in msg
+            if attempt < MAX_RETRIES and pool_problem:
+                time.sleep(RETRY_BACKOFF * attempt)
+                continue
+            raise
+    else:
+        if last_exc:
+            raise last_exc
 
     suffix = _infer_ext(resp)
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:

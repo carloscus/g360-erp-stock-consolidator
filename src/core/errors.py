@@ -11,6 +11,8 @@ def friendly_error(ex: Exception) -> str:
 
     if exc_type == "TimeoutError" or "Timeout" in exc_type or "timed out" in msg.lower():
         return "La conexión con el servidor no respondió a tiempo. Verifique su conexión a internet e intente nuevamente."
+    if "pool timed out" in msg.lower() or "pool exhausted" in msg.lower():
+        return "Servidor ocupado. Espere unos segundos e intente nuevamente."
     if "Credenciales incorrectas" in msg or "credenciales" in msg.lower():
         return "Credenciales incorrectas o sin acceso al ERP. Verifique usuario y contraseña en el diálogo de credenciales."
     if msg == "" or ("user" in msg.lower() and "pass" in msg.lower()):
